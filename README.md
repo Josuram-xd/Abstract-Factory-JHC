@@ -9,6 +9,8 @@ de objetos (extractor de cláusulas + detector de riesgos + generador de resumen
 un prompt especializado, sin mezclar lógica entre familias. Agregar un nuevo tipo de documento no
 requiere tocar el código cliente, solo sumar una fábrica concreta nueva.
 
+API grok "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"
+
 Tiene dos formas de uso: una interfaz gráfica de escritorio (Swing) y una versión de consola.
 
 ## Requisitos
