@@ -3,7 +3,7 @@ package com.legalai.config;
 public final class GroqConfig {
 
     public static final String ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-    public static final String MODELO = "llama-3.3-70b-versatile";
+    public static final String MODELO = "openai/gpt-oss-120b";
 
     private GroqConfig() {}
 
