@@ -1,5 +1,6 @@
 package com.legalai.ui.swing;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.legalai.client.GroqResponseException;
 import com.legalai.model.Clausula;
 import com.legalai.model.NivelRiesgo;
@@ -10,6 +11,7 @@ import com.legalai.service.ProcesadorDocumento;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -17,18 +19,26 @@ import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Comparator;
 
 public class AnalizadorFrame extends JFrame {
+
+    private static final Color FONDO = new Color(0xF3, 0xF4, 0xF6);
+    private static final Color TARJETA = Color.WHITE;
+    private static final Color BORDE = new Color(0xE2, 0xE5, 0xEA);
+    private static final Color TEXTO_SECUNDARIO = new Color(0x6B, 0x72, 0x80);
+    private static final Color AZUL = new Color(0x25, 0x63, 0xEB);
+    private static final Color ROJO = new Color(0xDC, 0x26, 0x26);
+    private static final Color AMBAR = new Color(0xD9, 0x77, 0x06);
+    private static final Color VERDE = new Color(0x16, 0xA3, 0x4A);
 
     private final ProcesadorDocumento procesador = new ProcesadorDocumento();
 
     private final JComboBox<TipoDocumento> comboTipo = new JComboBox<>(TipoDocumento.values());
     private final JTextArea areaTexto = new JTextArea();
-    private final JButton botonCargarArchivo = new JButton("Cargar archivo...");
-    private final JButton botonAnalizar = new JButton("Analizar");
-    private final JButton botonExportar = new JButton("Exportar reporte...");
+    private final JButton botonCargarArchivo = new JButton("Cargar archivo");
+    private final JButton botonAnalizar = new JButton("Analizar documento");
+    private final JButton botonExportar = new JButton("Exportar reporte");
     private final JLabel etiquetaEstado = new JLabel(" ");
 
     private final JTextArea areaClausulas = crearAreaResultado();
@@ -40,13 +50,24 @@ public class AnalizadorFrame extends JFrame {
     public AnalizadorFrame() {
         super("Motor de Análisis Legal — Groq");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 650);
+        setSize(980, 720);
+        setMinimumSize(new Dimension(760, 560));
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(8, 8));
 
-        add(construirPanelSuperior(), BorderLayout.NORTH);
-        add(construirPanelCentral(), BorderLayout.CENTER);
-        add(construirPanelInferior(), BorderLayout.SOUTH);
+        JPanel raiz = new JPanel(new BorderLayout(0, 16));
+        raiz.setBackground(FONDO);
+        raiz.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
+        setContentPane(raiz);
+
+        raiz.add(construirEncabezado(), BorderLayout.NORTH);
+
+        JPanel centro = new JPanel(new BorderLayout(0, 16));
+        centro.setOpaque(false);
+        centro.add(construirTarjetaEntrada(), BorderLayout.NORTH);
+        centro.add(construirPestañas(), BorderLayout.CENTER);
+        raiz.add(centro, BorderLayout.CENTER);
+
+        raiz.add(construirPie(), BorderLayout.SOUTH);
 
         botonCargarArchivo.addActionListener(e -> cargarArchivo());
         botonAnalizar.addActionListener(e -> analizar());
@@ -54,48 +75,117 @@ public class AnalizadorFrame extends JFrame {
         botonExportar.setEnabled(false);
     }
 
-    private JPanel construirPanelSuperior() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+    private JPanel construirEncabezado() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        JPanel selectorTipo = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        selectorTipo.add(new JLabel("Tipo de documento:"));
-        selectorTipo.add(comboTipo);
-        selectorTipo.add(botonCargarArchivo);
+        JLabel titulo = new JLabel("⚖  Motor de Análisis Legal");
+        titulo.putClientProperty(FlatClientProperties.STYLE, "font:bold +8");
+        titulo.setAlignmentX(LEFT_ALIGNMENT);
 
-        panel.add(selectorTipo, BorderLayout.NORTH);
+        JLabel subtitulo = new JLabel("Extracción de cláusulas, riesgos y resumen ejecutivo con IA (Groq)");
+        subtitulo.setForeground(TEXTO_SECUNDARIO);
+        subtitulo.setAlignmentX(LEFT_ALIGNMENT);
+
+        panel.add(titulo);
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(subtitulo);
+        return panel;
+    }
+
+    private JPanel construirTarjetaEntrada() {
+        JPanel tarjeta = tarjeta();
+        tarjeta.setLayout(new BorderLayout(0, 12));
+
+        JPanel filaSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filaSuperior.setOpaque(false);
+
+        JLabel etiquetaTipo = new JLabel("Tipo de documento:");
+        etiquetaTipo.putClientProperty(FlatClientProperties.STYLE, "font:bold");
+
+        comboTipo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                            boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof TipoDocumento tipo) {
+                    setText(etiquetaTipoDocumento(tipo));
+                }
+                return this;
+            }
+        });
+        comboTipo.putClientProperty(FlatClientProperties.STYLE, "focusWidth:1");
+
+        botonCargarArchivo.putClientProperty(FlatClientProperties.BUTTON_TYPE,
+                FlatClientProperties.BUTTON_TYPE_ROUND_RECT);
+
+        filaSuperior.add(etiquetaTipo);
+        filaSuperior.add(comboTipo);
+        filaSuperior.add(botonCargarArchivo);
 
         areaTexto.setLineWrap(true);
         areaTexto.setWrapStyleWord(true);
-        JScrollPane scroll = new JScrollPane(areaTexto);
-        scroll.setPreferredSize(new Dimension(0, 180));
-        scroll.setBorder(BorderFactory.createTitledBorder("Texto del documento"));
-        panel.add(scroll, BorderLayout.CENTER);
+        areaTexto.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        areaTexto.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+                "Pega aquí el texto del documento, o cárgalo desde un archivo .txt...");
+        JScrollPane scrollTexto = new JScrollPane(areaTexto);
+        scrollTexto.setPreferredSize(new Dimension(0, 170));
+        scrollTexto.setBorder(BorderFactory.createLineBorder(BORDE, 1, true));
 
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        botones.add(botonAnalizar);
-        panel.add(botones, BorderLayout.SOUTH);
+        JPanel filaBotonAnalizar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        filaBotonAnalizar.setOpaque(false);
+        botonAnalizar.putClientProperty(FlatClientProperties.STYLE,
+                "background:#2563EB;foreground:#FFFFFF;font:bold;focusWidth:0;borderWidth:0");
+        botonAnalizar.setForeground(Color.WHITE);
+        botonAnalizar.setBackground(AZUL);
+        filaBotonAnalizar.add(botonAnalizar);
 
-        return panel;
+        tarjeta.add(filaSuperior, BorderLayout.NORTH);
+        tarjeta.add(scrollTexto, BorderLayout.CENTER);
+        tarjeta.add(filaBotonAnalizar, BorderLayout.SOUTH);
+
+        return tarjeta;
     }
 
-    private JTabbedPane construirPanelCentral() {
+    private JTabbedPane construirPestañas() {
         JTabbedPane pestañas = new JTabbedPane();
-        pestañas.addTab("Cláusulas", new JScrollPane(areaClausulas));
-        pestañas.addTab("Riesgos", new JScrollPane(areaRiesgos));
-        pestañas.addTab("Resumen ejecutivo", new JScrollPane(areaResumen));
-        pestañas.setBorder(BorderFactory.createEmptyBorder(8, 10, 0, 10));
+        pestañas.putClientProperty(FlatClientProperties.STYLE, "tabHeight:34");
+        pestañas.addTab("📄  Cláusulas", envolverConMargen(areaClausulas));
+        pestañas.addTab("⚠️  Riesgos", envolverConMargen(areaRiesgos));
+        pestañas.addTab("📝  Resumen ejecutivo", envolverConMargen(areaResumen));
         return pestañas;
     }
 
-    private JPanel construirPanelInferior() {
+    private JScrollPane envolverConMargen(JTextComponent componente) {
+        componente.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
+        JScrollPane scroll = new JScrollPane(componente);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDE, 1, true));
+        return scroll;
+    }
+
+    private JPanel construirPie() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(4, 10, 10, 10));
+        panel.setOpaque(false);
+        etiquetaEstado.setForeground(TEXTO_SECUNDARIO);
         panel.add(etiquetaEstado, BorderLayout.WEST);
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        botones.setOpaque(false);
+        botonExportar.putClientProperty(FlatClientProperties.BUTTON_TYPE,
+                FlatClientProperties.BUTTON_TYPE_ROUND_RECT);
         botones.add(botonExportar);
         panel.add(botones, BorderLayout.EAST);
         return panel;
+    }
+
+    private JPanel tarjeta() {
+        JPanel tarjeta = new JPanel();
+        tarjeta.setBackground(TARJETA);
+        tarjeta.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDE, 1, true),
+                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
+        return tarjeta;
     }
 
     private static JTextArea crearAreaResultado() {
@@ -103,8 +193,16 @@ public class AnalizadorFrame extends JFrame {
         area.setEditable(false);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        area.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
         return area;
+    }
+
+    private String etiquetaTipoDocumento(TipoDocumento tipo) {
+        return switch (tipo) {
+            case ARRENDAMIENTO -> "Contrato de arrendamiento";
+            case LABORAL -> "Contrato laboral";
+            case TERMINOS_CONDICIONES -> "Términos y condiciones";
+        };
     }
 
     private void cargarArchivo() {
@@ -143,7 +241,8 @@ public class AnalizadorFrame extends JFrame {
                     ultimoReporte = get();
                     mostrarReporte(ultimoReporte);
                     botonExportar.setEnabled(true);
-                    etiquetaEstado.setText("Análisis completado.");
+                    etiquetaEstado.setText("✓ Análisis completado.");
+                    etiquetaEstado.setForeground(VERDE);
                 } catch (Exception e) {
                     Throwable causa = e.getCause() != null ? e.getCause() : e;
                     String mensaje = causa instanceof GroqResponseException
@@ -158,7 +257,8 @@ public class AnalizadorFrame extends JFrame {
     private void establecerCargando(boolean cargando) {
         botonAnalizar.setEnabled(!cargando);
         botonCargarArchivo.setEnabled(!cargando);
-        etiquetaEstado.setText(cargando ? "Analizando documento, esto puede tardar unos segundos..." : " ");
+        etiquetaEstado.setForeground(TEXTO_SECUNDARIO);
+        etiquetaEstado.setText(cargando ? "⏳ Analizando documento, esto puede tardar unos segundos..." : " ");
         setCursor(cargando ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
     }
 
@@ -193,17 +293,25 @@ public class AnalizadorFrame extends JFrame {
                 .toList();
 
         try {
-            doc.insertString(doc.getLength(), "RIESGOS IDENTIFICADOS (" + riesgosOrdenados.size() + ")\n\n", null);
+            SimpleAttributeSet titulo = new SimpleAttributeSet();
+            StyleConstants.setBold(titulo, true);
+            doc.insertString(doc.getLength(),
+                    "RIESGOS IDENTIFICADOS (" + riesgosOrdenados.size() + ")\n\n", titulo);
+
             for (Riesgo r : riesgosOrdenados) {
-                SimpleAttributeSet estilo = new SimpleAttributeSet();
-                StyleConstants.setForeground(estilo, colorNivel(r.nivel()));
-                StyleConstants.setBold(estilo, true);
-                doc.insertString(doc.getLength(), "[" + r.nivel() + "] ", estilo);
+                SimpleAttributeSet etiqueta = new SimpleAttributeSet();
+                StyleConstants.setForeground(etiqueta, colorNivel(r.nivel()));
+                StyleConstants.setBold(etiqueta, true);
+                doc.insertString(doc.getLength(), "● [" + r.nivel() + "] ", etiqueta);
 
                 SimpleAttributeSet normal = new SimpleAttributeSet();
+                StyleConstants.setBold(normal, true);
                 doc.insertString(doc.getLength(), r.descripcion() + "\n", normal);
-                doc.insertString(doc.getLength(), "    Relacionado con: " + r.clausulaRelacionada() + "\n", normal);
-                doc.insertString(doc.getLength(), "    Recomendación: " + r.recomendacion() + "\n\n", normal);
+
+                SimpleAttributeSet detalle = new SimpleAttributeSet();
+                StyleConstants.setForeground(detalle, TEXTO_SECUNDARIO);
+                doc.insertString(doc.getLength(), "    Relacionado con: " + r.clausulaRelacionada() + "\n", detalle);
+                doc.insertString(doc.getLength(), "    Recomendación: " + r.recomendacion() + "\n\n", detalle);
             }
         } catch (BadLocationException e) {
             areaRiesgos.setText("Error mostrando riesgos: " + e.getMessage());
@@ -216,7 +324,7 @@ public class AnalizadorFrame extends JFrame {
         sb.append(reporte.resumen().resumenGeneral()).append("\n\n");
         sb.append("Puntos clave:\n");
         for (String punto : reporte.resumen().puntosClave()) {
-            sb.append("  - ").append(punto).append('\n');
+            sb.append("  • ").append(punto).append('\n');
         }
         sb.append("\nRecomendación final: ").append(reporte.resumen().recomendacionFinal()).append('\n');
         return sb.toString();
@@ -232,9 +340,9 @@ public class AnalizadorFrame extends JFrame {
 
     private Color colorNivel(NivelRiesgo nivel) {
         return switch (nivel) {
-            case ALTO -> new Color(200, 0, 0);
-            case MEDIO -> new Color(180, 130, 0);
-            case BAJO -> new Color(0, 130, 0);
+            case ALTO -> ROJO;
+            case MEDIO -> AMBAR;
+            case BAJO -> VERDE;
         };
     }
 
