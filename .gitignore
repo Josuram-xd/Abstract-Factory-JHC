@@ -1,0 +1,27 @@
+# Maven
+target/
+dependency-reduced-pom.xml
+
+# Compiled class files
+*.class
+
+# IDE - Eclipse / JDT Language Server (VS Code Java extension)
+.classpath
+.project
+.settings/
+.factorypath
+
+# IDE - IntelliJ
+.idea/
+*.iml
+
+# VS Code (keep workspace settings, ignore local machine-specific state)
+.vscode/*
+!.vscode/settings.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
